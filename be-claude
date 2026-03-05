@@ -3,8 +3,8 @@ set -euo pipefail
 
 full=$(pwd)
 base=/Users/aj/Documents/code
-if [[ "$full" == "$base/"* ]]; then
-    prep="cd code/${full#$base/}; "
+if [[ "$full" == "$base"* ]]; then
+    prep="cd $full; "
 else
     prep=""
 fi

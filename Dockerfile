@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
     git curl sudo zsh fzf ripgrep make \
     iptables ipset iproute2 dnsutils \
     openssh-server jq vim gh golang gpg python3.12-venv \
-    ca-certificates
+    ca-certificates tmux
 
 # Install internal domain root certificates
 RUN printf '%s\n' \
@@ -53,7 +53,7 @@ RUN mkdir /var/run/sshd && \
 RUN ln -s /home /Users
 
 USER $USERNAME
-WORKDIR /workspace
+WORKDIR /Users/aj/Documents/code
 
 RUN go install golang.org/x/tools/gopls@latest
 
