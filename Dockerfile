@@ -43,15 +43,15 @@ RUN printf '%s\n' \
 
 # Non-root user for better isolation
 ARG USERNAME
+ARG USER_HOME
 ARG CODE_PATH
-RUN useradd -ms /bin/zsh $USERNAME && \
+RUN mkdir -p "$(dirname "$USER_HOME")" && \
+    useradd -ms /bin/zsh -d "$USER_HOME" $USERNAME && \
     echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # SSH setup
 RUN mkdir /var/run/sshd && \
     cp -r /etc/ssh /etc/ssh.original
-
-RUN ln -s /home /Users
 
 USER $USERNAME
 WORKDIR $CODE_PATH

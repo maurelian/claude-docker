@@ -6,14 +6,15 @@ services:
       args:
         CODE_PATH: ${CODE_PATH}
         USERNAME: ${USER}
+        USER_HOME: ${HOME}
     user: '${USER}'
     ports:
       - "2222:22"       # SSH into the container on port 2222
     volumes:
       - ${CODE_PATH}:${CODE_PATH}
-      - ./data/home:/home/${USER}/
-      - ${HOME}/.claude:/home/${USER}/.claude
-      - ${HOME}/.claude.json:/home/${USER}/.claude.json
+      - ./data/home:${HOME}/
+      - ${HOME}/.claude:${HOME}/.claude
+      - ${HOME}/.claude.json:${HOME}/.claude.json
       - ./data/ssh:/etc/ssh                      # persist SSH host keys across rebuilds
 
     command: >
