@@ -42,8 +42,8 @@ RUN printf '%s\n' \
     update-ca-certificates
 
 # Non-root user for better isolation
-ARG USERNAME=aj
-ARG CODE_PATH=/Users/aj/Documents/code
+ARG USERNAME
+ARG CODE_PATH
 RUN useradd -ms /bin/zsh $USERNAME && \
     echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
