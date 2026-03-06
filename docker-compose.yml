@@ -24,6 +24,4 @@ services:
         fi
         sudo /usr/sbin/sshd -D
       "
-    environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     restart: always

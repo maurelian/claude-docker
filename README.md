@@ -29,8 +29,6 @@ USERNAME=yourname
 # Path to your local code directory
 CODE_PATH=/Users/yourname/Documents/code
 
-# Anthropic API key
-ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ### 2. Add your SSH public key
@@ -67,7 +65,6 @@ All user-specific configuration lives in `.env` (not committed to git). See `.en
 |---|---|
 | `USERNAME` | Your local username — used as the container user and in mount paths |
 | `CODE_PATH` | Absolute path to your code directory on the host |
-| `ANTHROPIC_API_KEY` | Your Anthropic API key |
 
 ## Persisted data
 
