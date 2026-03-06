@@ -95,5 +95,5 @@ RUN go install golang.org/x/tools/gopls@latest
 # Install mise
 RUN curl https://mise.run | sh
 
-# Install Claude Code into user's local bin (already on PATH via .zshenv)
-RUN npm install -g --prefix ~/.local @anthropic-ai/claude-code
+# Install Claude Code (native install, auto-updates in background)
+RUN curl -fsSL https://claude.ai/install.sh | bash

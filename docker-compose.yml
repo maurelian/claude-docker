@@ -30,12 +30,6 @@ services:
         read_only: true
         bind:
           create_host_path: false
-      - type: bind
-        source: ${HOME}/.ssh/config
-        target: ${HOME}/.ssh/config
-        read_only: true
-        bind:
-          create_host_path: false
 
     command: >
       sh -c "
