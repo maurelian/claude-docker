@@ -89,6 +89,13 @@ RUN --mount=type=bind,from=ssh_config,target=/tmp/ssh_config \
         chown ${USERNAME}:${USERNAME} ${USER_HOME}/.ssh/known_hosts; \
     fi
 
+# Install iTerm2 utilities
+RUN for util in imgcat imgls it2api it2attention it2cat it2check it2copy it2dl it2getvar it2git it2profile it2setcolor it2setkeylabel it2ssh it2tip it2ul it2universion; do \
+        curl -fsSL "https://raw.githubusercontent.com/gnachman/iTerm2-shell-integration/main/utilities/$util" \
+            -o "/usr/local/bin/$util" && \
+        chmod +x "/usr/local/bin/$util"; \
+    done
+
 USER $USERNAME
 WORKDIR $CODE_PATH
 
@@ -96,13 +103,6 @@ RUN go install golang.org/x/tools/gopls@latest
 
 # Install mise
 RUN curl https://mise.run | sh
-
-# Install iTerm2 utilities
-RUN for util in imgcat imgls it2api it2attention it2cat it2check it2copy it2dl it2getvar it2git it2profile it2setcolor it2setkeylabel it2ssh it2tip it2ul it2universion; do \
-        curl -fsSL "https://raw.githubusercontent.com/gnachman/iTerm2-shell-integration/main/utilities/$util" \
-            -o "/usr/local/bin/$util" && \
-        chmod +x "/usr/local/bin/$util"; \
-    done
 
 # Install Claude Code (native install, auto-updates in background)
 RUN curl -fsSL https://claude.ai/install.sh | bash
