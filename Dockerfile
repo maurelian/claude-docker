@@ -77,6 +77,16 @@ RUN mkdir -p ${USER_HOME}/.ssh && \
     chmod 600 ${USER_HOME}/.ssh/authorized_keys && \
     chown -R ${USERNAME}:${USERNAME} ${USER_HOME}/.ssh
 
+# Copy known_hosts from host as a starting point (container maintains its own copy).
+# RUN --mount is used instead of COPY so we can handle the file being absent gracefully,
+# since COPY fails if the source file doesn't exist.
+RUN --mount=type=bind,from=ssh_config,target=/tmp/ssh_config \
+    if [ -f /tmp/ssh_config/known_hosts ]; then \
+        cp /tmp/ssh_config/known_hosts ${USER_HOME}/.ssh/known_hosts && \
+        chmod 600 ${USER_HOME}/.ssh/known_hosts && \
+        chown ${USERNAME}:${USERNAME} ${USER_HOME}/.ssh/known_hosts; \
+    fi
+
 USER $USERNAME
 WORKDIR $CODE_PATH
 

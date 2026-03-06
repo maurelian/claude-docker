@@ -3,6 +3,8 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME:-claude-dev}
     build:
       context: .
+      additional_contexts:
+        ssh_config: ${HOME}/.ssh
       args:
         CODE_PATH: ${CODE_PATH}
         USERNAME: ${USER}
@@ -15,14 +17,36 @@ services:
       - ${CODE_PATH}:${CODE_PATH}
       - ${HOME}/.claude:${HOME}/.claude
       - ${HOME}/.claude.json:${HOME}/.claude.json
-      - ./data/ssh:/etc/ssh                      # persist SSH host keys across rebuilds
+      - ssh-host-keys:/etc/ssh
+      - type: bind
+        source: ${HOME}/.gitconfig
+        target: ${HOME}/.gitconfig
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HOME}/.gitignore
+        target: ${HOME}/.gitignore
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HOME}/.ssh/config
+        target: ${HOME}/.ssh/config
+        read_only: true
+        bind:
+          create_host_path: false
 
     command: >
       sh -c "
-        if [ ! -f /etc/ssh/sshd_config ]; then
+        if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
           sudo cp -r /etc/ssh.original/. /etc/ssh/
           sudo ssh-keygen -A
         fi
         sudo /usr/sbin/sshd -D
       "
+
     restart: always
+
+volumes:
+  ssh-host-keys:
