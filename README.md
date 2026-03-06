@@ -67,6 +67,12 @@ All user-specific configuration lives in `.env` (not committed to git). See `.en
 | `SSH_PORT` | Host port mapped to SSH inside the container (default: `2222`) |
 | `COMPOSE_PROJECT_NAME` | Container name; override to run multiple instances (default: `claude-dev`) |
 
+## Custom CA certificates
+
+If your network requires custom root CA certificates (e.g., for corporate proxies or internal domains), drop `.crt` files into the `certs/` directory. They will be installed into the container's trust store on the next build.
+
+The `certs/` directory is gitignored, so your certificates stay local and are never committed.
+
 ## Mounted paths
 
 These paths from your host are mounted into the container:

@@ -6,40 +6,9 @@ RUN apt-get update && apt-get install -y \
     openssh-server jq vim gh golang gpg python3.12-venv \
     ca-certificates tmux
 
-# Install internal domain root certificates
-RUN printf '%s\n' \
-    '-----BEGIN CERTIFICATE-----' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    '-----END CERTIFICATE-----' \
-    > /usr/local/share/ca-certificates/custom-ca.crt && \
-    printf '%s\n' \
-    '-----BEGIN CERTIFICATE-----' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    'REDACTED' \
-    '-----END CERTIFICATE-----' \
-    > /usr/local/share/ca-certificates/custom-ca-2.crt && \
-    update-ca-certificates
+# Install custom CA certificates (drop .crt files into certs/ to include them)
+COPY certs/ /usr/local/share/ca-certificates/custom/
+RUN update-ca-certificates
 
 # Install Node.js (LTS)
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
