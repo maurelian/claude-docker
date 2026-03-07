@@ -2,6 +2,8 @@
 
 Run [Claude Code](https://claude.ai/claude-code) in an isolated Docker container. The container mirrors your local environment — same username, same file paths, same git config — so you can work as if Claude is running natively.
 
+> **Note:** This container provides encapsulation, not a security sandbox. Claude has read/write access to your mounted code directory, your git and Claude configs, a GitHub token, and unrestricted internet access. Treat it as a convenience layer for keeping your host system clean, not as a trust boundary.
+
 ## Quick start
 
 ```sh
