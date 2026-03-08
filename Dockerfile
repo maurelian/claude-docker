@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 
 RUN apt-get update && apt-get install -y \
-    git curl sudo zsh fzf ripgrep make \
+    git curl zsh fzf ripgrep make \
     iptables ipset iproute2 dnsutils \
     openssh-server jq vim gh golang gpg python3.12-venv \
     ca-certificates tmux
@@ -32,8 +32,7 @@ ARG USERNAME
 ARG USER_HOME
 ARG CODE_PATH
 RUN mkdir -p "$(dirname "$USER_HOME")" && \
-    useradd -ms /bin/zsh -d "$USER_HOME" $USERNAME && \
-    echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    useradd -ms /bin/zsh -d "$USER_HOME" $USERNAME
 
 # Copy dotfiles with correct ownership
 COPY --chown=${USERNAME}:${USERNAME} files/.profile ${USER_HOME}/.profile
@@ -68,6 +67,9 @@ RUN for util in imgcat imgls it2api it2attention it2cat it2check it2copy it2dl i
             -o "/usr/local/bin/$util" && \
         chmod +x "/usr/local/bin/$util"; \
     done
+
+# Entrypoint runs as root to set up SSH, then sshd handles user sessions
+COPY files/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 USER $USERNAME
 WORKDIR $CODE_PATH
