@@ -2,3 +2,5 @@
 .env
 /certs/*
 !/certs/.gitkeep
+/compose.d/*
+!/compose.d/.gitkeep

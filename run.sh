@@ -21,8 +21,15 @@ fi
 export SSH_AUTHORIZED_KEYS
 
 COMPOSE_FILES="-f docker-compose.yml"
-[ -f "$HOME/.gitconfig" ] && COMPOSE_FILES="$COMPOSE_FILES -f compose.d/gitconfig.yml"
-[ -f "$HOME/.gitignore" ] && COMPOSE_FILES="$COMPOSE_FILES -f compose.d/gitignore.yml"
-[ -d "$HOME/.local/state/mise" ] && COMPOSE_FILES="$COMPOSE_FILES -f compose.d/mise.yml"
+
+# Built-in modules (conditional on host state)
+[ -f "$HOME/.gitconfig" ] && COMPOSE_FILES="$COMPOSE_FILES -f modules/gitconfig.yml"
+[ -f "$HOME/.gitignore" ] && COMPOSE_FILES="$COMPOSE_FILES -f modules/gitignore.yml"
+[ -d "$HOME/.local/state/mise" ] && COMPOSE_FILES="$COMPOSE_FILES -f modules/mise.yml"
+
+# User-provided compose overlays
+for f in "$SCRIPT_DIR"/compose.d/*.yml; do
+    [ -f "$f" ] && COMPOSE_FILES="$COMPOSE_FILES -f $f"
+done
 
 docker compose $COMPOSE_FILES up -d --build

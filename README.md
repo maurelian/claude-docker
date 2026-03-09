@@ -59,6 +59,22 @@ All configuration lives in `.env` (gitignored). Copy `.env.example` to get start
 | `FORWARD_ENVS` | *(empty)* | Space-separated list of env var names to forward into the container |
 | `EXTRA_PACKAGES` | *(empty)* | Additional apt packages to install in the container (e.g. `postgresql-client redis-tools`) |
 
+## Custom compose overlays
+
+Drop `.yml` files into `compose.d/` to extend the Docker Compose configuration. All files are automatically included by `run.sh`. The directory is gitignored so overlays stay local.
+
+For example, to keep Rust build artifacts on a named volume (avoiding macOS/Linux binary conflicts):
+
+```yaml
+# compose.d/rust-cache.yml
+volumes:
+  rust-target:
+services:
+  claude-dev:
+    volumes:
+      - rust-target:/Users/you/code/optimism/rust/target
+```
+
 ## Custom CA certificates
 
 Drop `.crt` files into the `certs/` directory and rebuild. They are installed into the container's trust store automatically.
