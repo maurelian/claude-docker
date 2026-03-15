@@ -14,11 +14,14 @@ unset _source _dir
 # Load config
 source "$SCRIPT_DIR/.env"
 
-# Sync Claude OAuth credentials — outputs access token to stdout.
-# Passed to the container as CLAUDE_CODE_OAUTH_TOKEN (native env var support).
-OAUTH_TOKEN="$("$SCRIPT_DIR/files/sync-claude-credentials" pre)" || true
-if [[ -n "$OAUTH_TOKEN" ]]; then
-    export FORWARD_CLAUDE_CODE_OAUTH_TOKEN="$OAUTH_TOKEN"
+# Sync Claude OAuth credentials — outputs access token and refresh token (newline-separated).
+# Passed to the container as CLAUDE_CODE_OAUTH_TOKEN and CLAUDE_CODE_OAUTH_REFRESH_TOKEN.
+OAUTH_OUTPUT="$("$SCRIPT_DIR/files/sync-claude-credentials" pre)" || true
+if [[ -n "$OAUTH_OUTPUT" ]]; then
+    OAUTH_TOKEN="$(sed -n '1p' <<< "$OAUTH_OUTPUT")"
+    OAUTH_REFRESH_TOKEN="$(sed -n '2p' <<< "$OAUTH_OUTPUT")"
+    [[ -n "$OAUTH_TOKEN" ]] && export FORWARD_CLAUDE_CODE_OAUTH_TOKEN="$OAUTH_TOKEN"
+    [[ -n "$OAUTH_REFRESH_TOKEN" ]] && export FORWARD_CLAUDE_CODE_OAUTH_REFRESH_TOKEN="$OAUTH_REFRESH_TOKEN"
 fi
 
 full=$(pwd)
@@ -35,7 +38,7 @@ fi
 
 # Forward env vars into the container via SSH SendEnv with FORWARD_ prefix.
 # The claude-wrapper script in the container strips the prefix before exec'ing claude.
-send_env_opts=(-o "SendEnv=FORWARD_CLAUDE_CODE_OAUTH_TOKEN")
+send_env_opts=(-o "SendEnv=FORWARD_CLAUDE_CODE_OAUTH_TOKEN" -o "SendEnv=FORWARD_CLAUDE_CODE_OAUTH_REFRESH_TOKEN")
 for key in ${FORWARD_ENVS:-}; do
     [[ -z "${!key:-}" ]] && continue
     export "FORWARD_${key}=${!key}"
