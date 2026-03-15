@@ -51,7 +51,7 @@ remote_cmd="${prep}~/.local/bin/claude-wrapper ${CLAUDE_ARGS:-} $(printf '%q ' "
 
 mosh_port="${MOSH_PORT:-60001}"
 
-if command -v mosh &>/dev/null; then
+if [[ "${USE_MOSH:-false}" == "true" ]] && command -v mosh &>/dev/null; then
     # mosh uses SSH for initial connection (env forwarding happens there),
     # then upgrades to UDP for a resilient session.
     mosh --ssh="$ssh_cmd" -p "$mosh_port" localhost -- zsh -c "$remote_cmd" || exit_code=$?

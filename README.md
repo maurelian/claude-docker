@@ -13,13 +13,13 @@ cp .env.example .env
 ./be-claude
 ```
 
-That's it. `run.sh` builds and starts the container, `be-claude` connects and launches Claude Code in your current directory. If [mosh](https://mosh.org) is installed locally it is used automatically for a resilient connection; otherwise plain SSH is used.
+That's it. `run.sh` builds and starts the container, `be-claude` connects via SSH and launches Claude Code in your current directory. Set `USE_MOSH=true` in `.env` to use [mosh](https://mosh.org) instead for a resilient connection.
 
 If `SSH_AUTHORIZED_KEYS` isn't set in `.env`, `run.sh` automatically uses keys from your ssh-agent.
 
 ## How it works
 
-An Ubuntu container runs an SSH server on port 2222. Your code directory is bind-mounted at the same path inside the container, so file references are identical on both sides. `be-claude` connects (via mosh if available, otherwise SSH) and starts Claude in the directory matching your current working directory on the host.
+An Ubuntu container runs an SSH server on port 2222. Your code directory is bind-mounted at the same path inside the container, so file references are identical on both sides. `be-claude` connects via SSH (or mosh if enabled) and starts Claude in the directory matching your current working directory on the host.
 
 The container comes with Go, Node.js, Rust tooling, [mise](https://mise.run), [gopls](https://pkg.go.dev/golang.org/x/tools/gopls), git, gh, and other common development tools pre-installed.
 
@@ -54,7 +54,8 @@ All configuration lives in `.env` (gitignored). Copy `.env.example` to get start
 | `CODE_PATH` | *(required)* | Absolute path to your code directory on the host |
 | `SSH_AUTHORIZED_KEYS` | ssh-agent keys | SSH public key(s) allowed into the container |
 | `SSH_PORT` | `2222` | Host port mapped to the container's SSH server |
-| `MOSH_PORT` | `60001` | Host port mapped to the container's mosh server (UDP) |
+| `USE_MOSH` | `false` | Set to `true` to use mosh instead of SSH (requires mosh on host) |
+| `MOSH_PORT` | `60001` | Host port mapped to the container's mosh server (UDP, only used when `USE_MOSH=true`) |
 | `COMPOSE_PROJECT_NAME` | `claude-dev` | Container name — override to run multiple instances |
 | `CLAUDE_ARGS` | *(empty)* | Default arguments passed to claude (e.g. `--dangerously-skip-permissions`) |
 | `FORWARD_ENVS` | *(empty)* | Space-separated list of env var names to forward into the container |
