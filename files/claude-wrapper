@@ -9,6 +9,17 @@ for dir in trusted-configs tracked-configs; do
     fi
 done
 
+# Write full credentials JSON to tmpfs so Claude Code sees native "claude.ai" auth
+# (with account metadata, org info, MCP access) without touching host disk.
+if [[ -n "${FORWARD_CLAUDE_CREDS_JSON:-}" ]]; then
+    mkdir -p /dev/shm/claude-creds
+    chmod 700 /dev/shm/claude-creds
+    printf '%s' "$FORWARD_CLAUDE_CREDS_JSON" > /dev/shm/claude-creds/.credentials.json
+    chmod 600 /dev/shm/claude-creds/.credentials.json
+    ln -sf /dev/shm/claude-creds/.credentials.json ~/.claude/.credentials.json
+    unset FORWARD_CLAUDE_CREDS_JSON
+fi
+
 # Unprefix FORWARD_* env vars and exec claude.
 # e.g. FORWARD_GH_TOKEN=xxx becomes GH_TOKEN=xxx
 for var in ${(k)parameters[(I)FORWARD_*]}; do

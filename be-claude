@@ -14,14 +14,12 @@ unset _source _dir
 # Load config
 source "$SCRIPT_DIR/.env"
 
-# Sync Claude OAuth credentials — outputs access token and refresh token (newline-separated).
-# Passed to the container as CLAUDE_CODE_OAUTH_TOKEN and CLAUDE_CODE_OAUTH_REFRESH_TOKEN.
-OAUTH_OUTPUT="$("$SCRIPT_DIR/files/sync-claude-credentials" pre)" || true
-if [[ -n "$OAUTH_OUTPUT" ]]; then
-    OAUTH_TOKEN="$(sed -n '1p' <<< "$OAUTH_OUTPUT")"
-    OAUTH_REFRESH_TOKEN="$(sed -n '2p' <<< "$OAUTH_OUTPUT")"
-    [[ -n "$OAUTH_TOKEN" ]] && export FORWARD_CLAUDE_CODE_OAUTH_TOKEN="$OAUTH_TOKEN"
-    [[ -n "$OAUTH_REFRESH_TOKEN" ]] && export FORWARD_CLAUDE_CODE_OAUTH_REFRESH_TOKEN="$OAUTH_REFRESH_TOKEN"
+# Sync Claude OAuth credentials — passes the full credentials JSON (not just tokens)
+# so the container can write it to tmpfs and Claude Code sees native "claude.ai" auth
+# with full account metadata (email, org, subscription type, MCP access).
+CREDS_JSON="$("$SCRIPT_DIR/files/sync-claude-credentials" pre)" || true
+if [[ -n "$CREDS_JSON" ]]; then
+    export FORWARD_CLAUDE_CREDS_JSON="$CREDS_JSON"
 fi
 
 full=$(pwd)
@@ -38,7 +36,9 @@ fi
 
 # Forward env vars into the container via SSH SendEnv with FORWARD_ prefix.
 # The claude-wrapper script in the container strips the prefix before exec'ing claude.
-send_env_opts=(-o "SendEnv=FORWARD_CLAUDE_CODE_OAUTH_TOKEN" -o "SendEnv=FORWARD_CLAUDE_CODE_OAUTH_REFRESH_TOKEN")
+# Claude OAuth credentials are passed as the full JSON blob via FORWARD_CLAUDE_CREDS_JSON.
+# The claude-wrapper writes it to tmpfs (/dev/shm) so credentials never touch host disk.
+send_env_opts=(-o "SendEnv=FORWARD_CLAUDE_CREDS_JSON")
 for key in ${FORWARD_ENVS:-}; do
     [[ -z "${!key:-}" ]] && continue
     export "FORWARD_${key}=${!key}"
@@ -57,12 +57,6 @@ if [[ "${USE_MOSH:-false}" == "true" ]] && command -v mosh &>/dev/null; then
     mosh --ssh="$ssh_cmd" -p "$mosh_port" localhost -- zsh -c "$remote_cmd" || exit_code=$?
 else
     ssh -t -p "${ssh_port}" "${send_env_opts[@]}" "${iterm_opts[@]}" localhost "$remote_cmd" || exit_code=$?
-fi
-
-# Post-sync: if container refreshed the token (written to bind-mounted file),
-# update Keychain so native Claude picks it up.
-if [ -f "$HOME/.claude/.credentials.json" ]; then
-    "$SCRIPT_DIR/files/sync-claude-credentials" post < "$HOME/.claude/.credentials.json" || true
 fi
 
 exit "${exit_code:-0}"
