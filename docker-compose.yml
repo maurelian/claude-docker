@@ -3,8 +3,6 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME:-claude-dev}
     build:
       context: .
-      additional_contexts:
-        ssh_config: ${HOME}/.ssh
       args:
         CODE_PATH: ${CODE_PATH}
         USERNAME: ${USER}
@@ -19,6 +17,7 @@ services:
       - ${HOME}/.claude:${HOME}/.claude
       - ${HOME}/.claude.json:${HOME}/.claude.json
       - ssh-host-keys:/etc/ssh
+      - ${HOME}/.ssh/known_hosts:${HOME}/.ssh/known_hosts:ro
       - build-cache:${HOME}/.cache
 
     environment:
