@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
     git curl zsh fzf ripgrep make \
     iptables ipset iproute2 dnsutils \
     openssh-server jq vim gh golang gpg python3.12-venv \
-    ca-certificates tmux
+    ca-certificates tmux mosh
 
 # Install additional apt packages specified by the user
 ARG EXTRA_PACKAGES=""
@@ -51,15 +51,8 @@ RUN mkdir -p ${USER_HOME}/.ssh && \
     chmod 600 ${USER_HOME}/.ssh/authorized_keys && \
     chown -R ${USERNAME}:${USERNAME} ${USER_HOME}/.ssh
 
-# Copy known_hosts from host as a starting point (container maintains its own copy).
-# RUN --mount is used instead of COPY so we can handle the file being absent gracefully,
-# since COPY fails if the source file doesn't exist.
-RUN --mount=type=bind,from=ssh_config,target=/tmp/ssh_config \
-    if [ -f /tmp/ssh_config/known_hosts ]; then \
-        cp /tmp/ssh_config/known_hosts ${USER_HOME}/.ssh/known_hosts && \
-        chmod 600 ${USER_HOME}/.ssh/known_hosts && \
-        chown ${USERNAME}:${USERNAME} ${USER_HOME}/.ssh/known_hosts; \
-    fi
+# known_hosts is bind-mounted read-only from the host (see docker-compose.yml)
+# so it stays in sync without rebuilding.
 
 # Install iTerm2 utilities
 RUN for util in imgcat imgls it2api it2attention it2cat it2check it2copy it2dl it2getvar it2git it2profile it2setcolor it2setkeylabel it2ssh it2tip it2ul it2universion; do \
@@ -67,6 +60,14 @@ RUN for util in imgcat imgls it2api it2attention it2cat it2check it2copy it2dl i
             -o "/usr/local/bin/$util" && \
         chmod +x "/usr/local/bin/$util"; \
     done
+
+# Install tuicr
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then TARGET="x86_64-unknown-linux-gnu"; \
+    else TARGET="aarch64-unknown-linux-gnu"; fi && \
+    VERSION=$(curl -fsSL https://api.github.com/repos/agavra/tuicr/releases/latest | jq -r .tag_name) && \
+    curl -fsSL "https://github.com/agavra/tuicr/releases/download/${VERSION}/tuicr-${VERSION#v}-${TARGET}.tar.gz" \
+    | tar xz -C /usr/local/bin tuicr
 
 # Entrypoint runs as root to set up SSH, then sshd handles user sessions
 COPY files/entrypoint.sh /usr/local/bin/entrypoint.sh

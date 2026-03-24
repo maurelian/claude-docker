@@ -13,13 +13,13 @@ cp .env.example .env
 ./be-claude
 ```
 
-That's it. `run.sh` builds and starts the container, `be-claude` SSHs in and launches Claude Code in your current directory.
+That's it. `run.sh` builds and starts the container, `be-claude` connects via SSH and launches Claude Code in your current directory. Set `USE_MOSH=true` in `.env` to use [mosh](https://mosh.org) instead for a resilient connection.
 
 If `SSH_AUTHORIZED_KEYS` isn't set in `.env`, `run.sh` automatically uses keys from your ssh-agent.
 
 ## How it works
 
-An Ubuntu container runs an SSH server on port 2222. Your code directory is bind-mounted at the same path inside the container, so file references are identical on both sides. `be-claude` connects via SSH and starts Claude in the directory matching your current working directory on the host.
+An Ubuntu container runs an SSH server on port 2222. Your code directory is bind-mounted at the same path inside the container, so file references are identical on both sides. `be-claude` connects via SSH (or mosh if enabled) and starts Claude in the directory matching your current working directory on the host.
 
 The container comes with Go, Node.js, Rust tooling, [mise](https://mise.run), [gopls](https://pkg.go.dev/golang.org/x/tools/gopls), git, gh, and other common development tools pre-installed.
 
@@ -54,10 +54,26 @@ All configuration lives in `.env` (gitignored). Copy `.env.example` to get start
 | `CODE_PATH` | *(required)* | Absolute path to your code directory on the host |
 | `SSH_AUTHORIZED_KEYS` | ssh-agent keys | SSH public key(s) allowed into the container |
 | `SSH_PORT` | `2222` | Host port mapped to the container's SSH server |
+| `USE_MOSH` | `false` | Set to `true` to use mosh instead of SSH (requires mosh on host) |
+| `MOSH_PORT` | `60001` | Host port mapped to the container's mosh server (UDP, only used when `USE_MOSH=true`) |
 | `COMPOSE_PROJECT_NAME` | `claude-dev` | Container name — override to run multiple instances |
 | `CLAUDE_ARGS` | *(empty)* | Default arguments passed to claude (e.g. `--dangerously-skip-permissions`) |
 | `FORWARD_ENVS` | *(empty)* | Space-separated list of env var names to forward into the container |
+| `CLAUDE_CREDENTIAL_SYNC` | `true` | Set to `false` to disable automatic credential sync (see below) |
 | `EXTRA_PACKAGES` | *(empty)* | Additional apt packages to install in the container (e.g. `postgresql-client redis-tools`) |
+
+## Credential sync
+
+Claude Code authenticates via OAuth. On macOS, logging in through Claude Desktop or Claude Code stores the OAuth token in the system Keychain. The container can't access the Keychain directly, so without credential sync you'd need to log in separately inside the container.
+
+`be-claude` solves this by automatically reading credentials from the macOS Keychain before each session and injecting them into the container. After the session ends, if the container refreshed the token, `be-claude` updates the Keychain so native Claude picks it up. This means you can:
+
+- **Log in once on macOS** (via Claude Desktop or `claude` on the command line) and have that login automatically work inside the container — no need to authenticate separately
+- **Log in inside the container** (if you prefer) and have the token sync back to the Keychain for native use
+
+On non-macOS hosts, the credentials file (`~/.claude/.credentials.json`) is the single source of truth — the container reads and writes it directly via bind mount.
+
+To disable syncing, set `CLAUDE_CREDENTIAL_SYNC=false` in `.env`.
 
 ## Custom compose overlays
 
@@ -72,7 +88,21 @@ volumes:
 services:
   claude-dev:
     volumes:
-      - rust-target:/Users/you/code/optimism/rust/target
+      - rust-target:/Users/you/code/project/rust/target
+      - ./compose.d/rust-cache.init.sh:/etc/claude-docker/init.d/rust-cache.sh:ro
+```
+
+### Init scripts
+
+Named volumes are created by Docker as root, so they may need ownership fixed before the non-root user can write to them. The entrypoint sources any `*.sh` scripts found in `/etc/claude-docker/init.d/` at startup (running as root, before sshd starts). Overlays can bind-mount init scripts into this directory.
+
+The `APP_USER` environment variable is set to the host username for use in init scripts.
+
+```sh
+# compose.d/rust-cache.init.sh
+#!/bin/sh
+target="/Users/you/code/project/rust/target"
+[ -n "$APP_USER" ] && [ -d "$target" ] && chown "$APP_USER:$APP_USER" "$target"
 ```
 
 ## Custom CA certificates
@@ -102,6 +132,8 @@ Named Docker volumes preserve data across container rebuilds:
 | `ssh-host-keys` | `/etc/ssh` | SSH host keys (avoids host key warnings after rebuild) |
 | `build-cache` | `~/.cache` | Go build/module cache, Cargo registry, Foundry cache, solc binaries, mise cache |
 
+The `APP_USER` environment variable is also set to the host username, for use by init scripts (see [Custom compose overlays](#custom-compose-overlays)).
+
 Environment variables redirect tool caches into `~/.cache` so a single volume covers everything:
 
 - `GOMODCACHE` → `~/.cache/go-mod`
@@ -111,7 +143,7 @@ Environment variables redirect tool caches into `~/.cache` so a single volume co
 
 ## Pre-installed tools
 
-git, gh, go, gopls, node, npm, mise, tmux, vim, zsh, fzf, ripgrep, diff-so-fancy, jq, make, gpg, iTerm2 utilities
+git, gh, go, gopls, node, npm, mise, mosh, tmux, vim, zsh, fzf, ripgrep, diff-so-fancy, jq, make, gpg, [tuicr](https://github.com/agavra/tuicr), iTerm2 utilities
 
 ## SSH agent forwarding
 
