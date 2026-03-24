@@ -35,4 +35,4 @@ for key in ${FORWARD_ENVS:-}; do
     send_env_opts+=(-o "SendEnv=FORWARD_${key}")
 done
 
-ssh -t -p "${SSH_PORT:-2222}" "${send_env_opts[@]}" "${iterm_opts[@]}" localhost "${prep}~/.local/bin/claude-wrapper ${CLAUDE_ARGS:-} $(printf '%q ' "$@")"
+ssh -A -t -p "${SSH_PORT:-2222}" "${send_env_opts[@]}" "${iterm_opts[@]}" localhost "${prep}~/.local/bin/claude-wrapper ${CLAUDE_ARGS:-} $(printf '%q ' "$@")"
