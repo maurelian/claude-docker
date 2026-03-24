@@ -60,7 +60,7 @@ if [[ "${USE_MOSH:-false}" == "true" ]] && command -v mosh &>/dev/null; then
     # then upgrades to UDP for a resilient session.
     mosh --ssh="$ssh_cmd" -p "$mosh_port" localhost -- zsh -c "$remote_cmd" || exit_code=$?
 else
-    ssh -t -p "${ssh_port}" "${send_env_opts[@]}" ${iterm_opts[@]+"${iterm_opts[@]}"} localhost "$remote_cmd" || exit_code=$?
+    ssh -A -t -p "${ssh_port}" "${send_env_opts[@]}" ${iterm_opts[@]+"${iterm_opts[@]}"} localhost "$remote_cmd" || exit_code=$?
 fi
 
 exit "${exit_code:-0}"
