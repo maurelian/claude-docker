@@ -45,4 +45,9 @@ for var in ${(k)parameters[(I)FORWARD_*]}; do
     export "${var#FORWARD_}=${(P)var}"
     unset "$var"
 done
-exec ~/.local/bin/claude "$@"
+if [[ "${1:-}" == "--shell" ]]; then
+    shift
+    exec "${SHELL:-/bin/zsh}" "$@"
+else
+    exec ~/.local/bin/claude "$@"
+fi
