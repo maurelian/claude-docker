@@ -13,3 +13,7 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - mise-installs:${HOME}/.local/share/mise
+
+volumes:
+  mise-installs:

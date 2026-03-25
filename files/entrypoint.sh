@@ -7,6 +7,12 @@ if [ ! -f /etc/ssh/ssh_host_ed25519_key ]; then
 fi
 cp /etc/ssh.original/sshd_config /etc/ssh/sshd_config
 
+# Fix ownership on named volumes (created as root by Docker)
+USER_HOME="$(eval echo ~"$APP_USER")"
+for dir in "$USER_HOME/.local/share/mise" "$USER_HOME/.cache"; do
+  [ -d "$dir" ] && chown -R "$APP_USER:$APP_USER" "$dir" 2>/dev/null || true
+done
+
 # Run user-provided init scripts (compose overlays bind-mount into this dir)
 for f in /etc/claude-docker/init.d/*.sh; do
   [ -f "$f" ] && . "$f"
