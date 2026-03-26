@@ -33,9 +33,8 @@ if [[ -n "${ITERM_SESSION_ID:-}" ]]; then
 fi
 
 # Forward env vars into the container via SSH SendEnv with FORWARD_ prefix.
-# The claude-wrapper script in the container strips the prefix before exec'ing claude.
-# Claude OAuth credentials are passed as the full JSON blob via FORWARD_CLAUDE_CREDS_JSON.
-# The claude-wrapper writes it to tmpfs (/dev/shm) so credentials never touch host disk.
+# 00-forward-env.sh (in .zshrc.d) strips the prefix during shell init so all
+# processes see the real names. Credentials are written to tmpfs (/dev/shm).
 send_env_opts=(-o "SendEnv=FORWARD_CLAUDE_CREDS_JSON")
 for key in ${FORWARD_ENVS:-}; do
     [[ -z "${!key:-}" ]] && continue

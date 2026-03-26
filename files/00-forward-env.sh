@@ -1,4 +1,8 @@
-#!/bin/zsh
+# Resolve FORWARD_* env vars and Claude credentials on first shell init.
+# SSH AcceptEnv passes host env vars with a FORWARD_ prefix to avoid collisions.
+# This script strips the prefix so all processes see the real names.
+# Must run before other .zshrc.d scripts (hence the 00- prefix).
+
 # Merge host mise trusted/tracked configs without overwriting container-local entries
 for dir in trusted-configs tracked-configs; do
     host_dir=~/.local/state/mise/host-$dir
@@ -10,13 +14,11 @@ for dir in trusted-configs tracked-configs; do
 done
 
 # Write full credentials JSON to tmpfs so Claude Code sees native "claude.ai" auth
-# (with account metadata, org info, MCP access) without touching host disk.
 if [[ -n "${FORWARD_CLAUDE_CREDS_JSON:-}" ]]; then
     creds_target=~/.claude/.credentials.json
     shm_dir=/dev/shm/claude-creds
     shm_file=$shm_dir/.credentials.json
 
-    # If already symlinked to /dev/shm, write directly to the target
     if [[ -L "$creds_target" && "$(readlink "$creds_target")" == /dev/shm/* ]]; then
         shm_file="$(readlink "$creds_target")"
         shm_dir="$(dirname "$shm_file")"
@@ -25,13 +27,11 @@ if [[ -n "${FORWARD_CLAUDE_CREDS_JSON:-}" ]]; then
     mkdir -p "$shm_dir"
     chmod 700 "$shm_dir"
 
-    # Only write if credentials have actually changed
     if [[ ! -f "$shm_file" ]] || [[ "$(cat "$shm_file")" != "$FORWARD_CLAUDE_CREDS_JSON" ]]; then
         printf '%s' "$FORWARD_CLAUDE_CREDS_JSON" > "$shm_file"
         chmod 600 "$shm_file"
     fi
 
-    # Create symlink only if not already pointing to the right place
     if [[ ! -L "$creds_target" || "$(readlink "$creds_target")" != "$shm_file" ]]; then
         ln -sf "$shm_file" "$creds_target"
     fi
@@ -39,15 +39,8 @@ if [[ -n "${FORWARD_CLAUDE_CREDS_JSON:-}" ]]; then
     unset FORWARD_CLAUDE_CREDS_JSON
 fi
 
-# Unprefix FORWARD_* env vars and exec claude.
-# e.g. FORWARD_GH_TOKEN=xxx becomes GH_TOKEN=xxx
+# Unprefix FORWARD_* env vars: FORWARD_GH_TOKEN=xxx becomes GH_TOKEN=xxx
 for var in ${(k)parameters[(I)FORWARD_*]}; do
     export "${var#FORWARD_}=${(P)var}"
     unset "$var"
 done
-if [[ "${1:-}" == "--shell" ]]; then
-    shift
-    exec "${SHELL:-/bin/zsh}" "$@"
-else
-    exec ~/.local/bin/claude "$@"
-fi

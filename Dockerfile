@@ -41,6 +41,7 @@ COPY --chown=${USERNAME}:${USERNAME} files/.zshrc ${USER_HOME}/.zshrc
 # Create .zshrc.d directory and install snippets
 RUN mkdir -p ${USER_HOME}/.zshrc.d && \
     chown ${USERNAME}:${USERNAME} ${USER_HOME}/.zshrc.d
+COPY --chown=${USERNAME}:${USERNAME} files/00-forward-env.sh ${USER_HOME}/.zshrc.d/00-forward-env.sh
 COPY --chown=${USERNAME}:${USERNAME} files/setupGitSigning.sh ${USER_HOME}/.zshrc.d/setupGitSigning.sh
 
 # Setup SSH authorized_keys from build arg
@@ -80,9 +81,6 @@ RUN go install golang.org/x/tools/gopls@latest
 # Install mise and ensure state directory exists (prevents Docker creating it as root on mount)
 RUN curl https://mise.run | sh && \
     mkdir -p ${USER_HOME}/.local/state/mise
-
-# Wrapper that unprefixes FORWARD_* env vars and execs claude
-COPY --chown=${USERNAME}:${USERNAME} files/claude-wrapper ${USER_HOME}/.local/bin/claude-wrapper
 
 # Install Claude Code (native install, auto-updates in background)
 RUN curl -fsSL https://claude.ai/install.sh | bash
