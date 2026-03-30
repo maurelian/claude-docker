@@ -13,7 +13,9 @@ for dir in trusted-configs tracked-configs; do
     fi
 done
 
-# Write full credentials JSON to tmpfs so Claude Code sees native "claude.ai" auth
+# Write full credentials JSON to tmpfs so Claude Code sees native "claude.ai" auth.
+# Only overwrite if the incoming credentials are newer than what's already in tmpfs
+# (the container may have refreshed the token since the last session start).
 if [[ -n "${FORWARD_CLAUDE_CREDS_JSON:-}" ]]; then
     creds_target=~/.claude/.credentials.json
     shm_dir=/dev/shm/claude-creds
@@ -27,9 +29,29 @@ if [[ -n "${FORWARD_CLAUDE_CREDS_JSON:-}" ]]; then
     mkdir -p "$shm_dir"
     chmod 700 "$shm_dir"
 
-    if [[ ! -f "$shm_file" ]] || [[ "$(cat "$shm_file")" != "$FORWARD_CLAUDE_CREDS_JSON" ]]; then
+    # Compare expiresAt to avoid overwriting a fresher token from a previous session
+    _get_expires_at() {
+        python3 -c "
+import json, sys
+try:
+    d = json.loads(sys.stdin.read())
+    print(d.get('claudeAiOauth', {}).get('expiresAt', 0))
+except Exception:
+    print(0)
+" <<< "$1"
+    }
+
+    incoming_exp=$(_get_expires_at "$FORWARD_CLAUDE_CREDS_JSON")
+    existing_exp=0
+    if [[ -f "$shm_file" ]]; then
+        existing_exp=$(_get_expires_at "$(cat "$shm_file")")
+    fi
+
+    if (( incoming_exp > existing_exp )); then
         printf '%s' "$FORWARD_CLAUDE_CREDS_JSON" > "$shm_file"
         chmod 600 "$shm_file"
+    elif (( existing_exp > 0 )); then
+        echo "Keeping existing container credentials (newer than host)." >&2
     fi
 
     if [[ ! -L "$creds_target" || "$(readlink "$creds_target")" != "$shm_file" ]]; then

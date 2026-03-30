@@ -59,5 +59,47 @@ run_remote() {
         ssh -A -t -p "${ssh_port}" "${send_env_opts[@]}" ${iterm_opts[@]+"${iterm_opts[@]}"} localhost "$remote_cmd" || exit_code=$?
     fi
 
+    # Post-session: sync credentials from container tmpfs back to host Keychain.
+    # The container may have refreshed the token during the session.
+    sync_creds_back || true
+
     exit "${exit_code:-0}"
+}
+
+# Read credentials from container tmpfs and update host Keychain if newer.
+sync_creds_back() {
+    # Only sync on macOS (Keychain is the credential store)
+    [[ "$(uname -s)" != "Darwin" ]] && return 0
+    [[ "${CLAUDE_CREDENTIAL_SYNC:-true}" == "false" ]] && return 0
+
+    local container_creds
+    container_creds="$(ssh -p "${ssh_port}" -o BatchMode=yes localhost \
+        'cat /dev/shm/claude-creds/.credentials.json 2>/dev/null' 2>/dev/null)" || return 0
+    [[ -z "$container_creds" ]] && return 0
+
+    local keychain_creds
+    keychain_creds="$(security find-generic-password -w -s "Claude Code-credentials" 2>/dev/null)" || keychain_creds=""
+
+    local container_exp keychain_exp
+    container_exp="$(python3 -c "
+import json, sys
+try:
+    d = json.loads(sys.argv[1])
+    print(d.get('claudeAiOauth', {}).get('expiresAt', 0))
+except Exception:
+    print(0)
+" "$container_creds")"
+    keychain_exp="$(python3 -c "
+import json, sys
+try:
+    d = json.loads(sys.argv[1])
+    print(d.get('claudeAiOauth', {}).get('expiresAt', 0))
+except Exception:
+    print(0)
+" "$keychain_creds")"
+
+    if (( container_exp > keychain_exp )); then
+        security delete-generic-password -s "Claude Code-credentials" >/dev/null 2>&1 || true
+        security add-generic-password -s "Claude Code-credentials" -a "$USER" -w "$container_creds" >/dev/null 2>&1
+    fi
 }
