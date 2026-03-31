@@ -36,7 +36,7 @@ fi
 # 00-forward-env.sh (in .zshrc.d) strips the prefix during shell init so all
 # processes see the real names. Credentials are written to tmpfs (/dev/shm).
 send_env_opts=(-o "SendEnv=FORWARD_CLAUDE_CREDS_JSON")
-for key in ${FORWARD_ENVS:-}; do
+for key in TERM_PROGRAM ${FORWARD_ENVS:-}; do
     [[ -z "${!key:-}" ]] && continue
     export "FORWARD_${key}=${!key}"
     send_env_opts+=(-o "SendEnv=FORWARD_${key}")
