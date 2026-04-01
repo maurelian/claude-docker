@@ -12,12 +12,12 @@ if [ ! -f "$SCRIPT_DIR/.env" ]; then
 fi
 source "$SCRIPT_DIR/.env"
 
-# Sync Claude OAuth credentials — passes the full credentials JSON (not just tokens)
-# so the container can write it to tmpfs and Claude Code sees native "claude.ai" auth
-# with full account metadata (email, org, subscription type, MCP access).
-CREDS_JSON="$("$SCRIPT_DIR/files/sync-claude-credentials" pre)" || true
-if [[ -n "$CREDS_JSON" ]]; then
-    export FORWARD_CLAUDE_CREDS_JSON="$CREDS_JSON"
+# Sync Claude OAuth credentials (only for Claude Code sessions).
+if [[ "${SKIP_CLAUDE_CREDS:-}" != "1" ]]; then
+    CREDS_JSON="$("$SCRIPT_DIR/files/sync-claude-credentials" pre)" || true
+    if [[ -n "$CREDS_JSON" ]]; then
+        export FORWARD_CLAUDE_CREDS_JSON="$CREDS_JSON"
+    fi
 fi
 
 full=$(pwd)
@@ -61,7 +61,9 @@ run_remote() {
 
     # Post-session: sync credentials from container tmpfs back to host Keychain.
     # The container may have refreshed the token during the session.
-    sync_creds_back || true
+    if [[ "${SKIP_CLAUDE_CREDS:-}" != "1" ]]; then
+        sync_creds_back || true
+    fi
 
     exit "${exit_code:-0}"
 }

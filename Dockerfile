@@ -18,8 +18,8 @@ RUN update-ca-certificates
 RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
     apt-get install -y nodejs
 
-# Install diff-so-fancy globally
-RUN npm install -g diff-so-fancy
+# Install diff-so-fancy and Codex CLI globally
+RUN npm install -g diff-so-fancy @openai/codex
 
 # SSH setup
 RUN mkdir /var/run/sshd && \
@@ -84,3 +84,4 @@ RUN curl https://mise.run | sh && \
 
 # Install Claude Code (native install, auto-updates in background)
 RUN curl -fsSL https://claude.ai/install.sh | bash
+

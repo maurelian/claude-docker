@@ -1,0 +1,4 @@
+services:
+  claude-dev:
+    volumes:
+      - ${HOME}/.codex:${HOME}/.codex

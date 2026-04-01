@@ -1,8 +1,12 @@
 # claude-docker
 
-Run [Claude Code](https://claude.ai/claude-code) in an isolated Docker container. The container mirrors your local environment — same username, same file paths, same git config — so you can work as if Claude is running natively.
+Run AI coding agents in an isolated Docker container. The container mirrors your local environment — same username, same file paths, same git config — so you can work as if the agent is running natively.
 
-> **Note:** This container provides encapsulation, not a security sandbox. Claude has read/write access to your mounted code directory, your git and Claude configs, a GitHub token, and unrestricted internet access. Treat it as a convenience layer for keeping your host system clean, not as a trust boundary.
+Currently supported agents:
+- [Claude Code](https://claude.ai/claude-code) (Anthropic)
+- [Codex CLI](https://github.com/openai/codex) (OpenAI)
+
+> **Note:** This container provides encapsulation, not a security sandbox. Agents have read/write access to your mounted code directory, your git and agent configs, a GitHub token, and unrestricted internet access. Treat it as a convenience layer for keeping your host system clean, not as a trust boundary.
 
 ## Quick start
 
@@ -10,12 +14,25 @@ Run [Claude Code](https://claude.ai/claude-code) in an isolated Docker container
 cp .env.example .env
 # Edit .env — set CODE_PATH to your code directory
 ./run.sh
-./be-claude
+./be-claude    # launch Claude Code
+./be-codex     # launch Codex CLI
 ```
 
-That's it. `run.sh` builds and starts the container, `be-claude` connects via SSH and launches Claude Code in your current directory. Set `USE_MOSH=true` in `.env` to use [mosh](https://mosh.org) instead for a resilient connection.
+That's it. `run.sh` builds and starts the container, then use `be-claude` or `be-codex` to connect via SSH and launch the agent in your current directory. Set `USE_MOSH=true` in `.env` to use [mosh](https://mosh.org) instead for a resilient connection.
 
 If `SSH_AUTHORIZED_KEYS` isn't set in `.env`, `run.sh` automatically uses keys from your ssh-agent.
+
+### Project instructions
+
+Both agents support repo-level instruction files (`CLAUDE.md` for Claude Code, `AGENTS.md` for Codex). To maintain a single source of truth, name your file `AGENTS.md` and symlink `CLAUDE.md` to it:
+
+```sh
+# In your project repo:
+mv CLAUDE.md AGENTS.md    # or create AGENTS.md from scratch
+ln -s AGENTS.md CLAUDE.md
+```
+
+Both agents will read the same instructions.
 
 ## How it works
 
@@ -25,18 +42,22 @@ The container comes with Go, Node.js, Rust tooling, [mise](https://mise.run), [g
 
 ## Usage
 
-### be-claude
+### be-claude / be-codex
 
 Run from anywhere inside your `CODE_PATH`:
 
 ```sh
 ./be-claude                    # launch Claude Code
 ./be-claude --resume           # pass arguments through to claude
+./be-codex                     # launch Codex CLI
+./be-codex --full-auto         # pass arguments through to codex
 ```
 
-`be-claude` can be symlinked onto your `PATH` for convenience — it resolves its own location to find `.env`.
+Both scripts can be symlinked onto your `PATH` for convenience — they resolve their own location to find `.env`.
 
 Environment variables listed in `FORWARD_ENVS` are forwarded securely into the container via SSH's `SendEnv` mechanism — values never appear in process arguments. Since `.env` is sourced as bash, you can use command substitution to set values dynamically (e.g. `GH_TOKEN=$(gh auth token)`). See `.env.example` for a typical setup.
+
+**Codex CLI** authenticates via `codex` login — credentials are stored in `~/.codex/` which is bind-mounted from the host, so login persists across container rebuilds. Claude Code credentials are synced automatically from the macOS Keychain (see [Credential sync](#credential-sync)).
 
 ### Starting and stopping
 
@@ -60,6 +81,8 @@ All configuration lives in `.env` (gitignored). Copy `.env.example` to get start
 | `CLAUDE_ARGS` | *(empty)* | Default arguments passed to claude (e.g. `--dangerously-skip-permissions`) |
 | `FORWARD_ENVS` | *(empty)* | Space-separated list of env var names to forward into the container |
 | `CLAUDE_CREDENTIAL_SYNC` | `true` | Set to `false` to disable automatic credential sync (see below) |
+| `CODEX_ARGS` | *(empty)* | Default arguments passed to codex (e.g. `--full-auto`) |
+| `CODEX_SANDBOX` | `danger-full-access` | Codex sandbox mode — bubblewrap can't create namespaces inside Docker, so sandboxed modes require `--privileged` |
 | `EXTRA_PACKAGES` | *(empty)* | Additional apt packages to install in the container (e.g. `postgresql-client redis-tools`) |
 
 ## Credential sync
@@ -118,6 +141,7 @@ The `certs/` directory is gitignored so certificates stay local.
 | `$CODE_PATH` | `$CODE_PATH` | read/write |
 | `~/.claude` | `~/.claude` | read/write |
 | `~/.claude.json` | `~/.claude.json` | read/write |
+| `~/.codex` | `~/.codex` | read/write |
 | `~/.gitconfig` | `~/.gitconfig` | read-only |
 | `~/.gitignore` | `~/.gitignore` | read-only |
 | `~/.local/state/mise/trusted-configs` | `~/.local/state/mise/host-trusted-configs` | read-only |
@@ -143,7 +167,7 @@ Environment variables redirect tool caches into `~/.cache` so a single volume co
 
 ## Pre-installed tools
 
-git, gh, go, gopls, node, npm, mise, mosh, tmux, vim, zsh, fzf, ripgrep, diff-so-fancy, jq, make, gpg, [tuicr](https://github.com/agavra/tuicr), iTerm2 utilities
+git, gh, go, gopls, node, npm, [codex](https://github.com/openai/codex), mise, mosh, tmux, vim, zsh, fzf, ripgrep, diff-so-fancy, jq, make, gpg, [tuicr](https://github.com/agavra/tuicr), iTerm2 utilities
 
 ## SSH agent forwarding
 
