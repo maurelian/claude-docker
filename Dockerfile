@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y \
     git curl zsh fzf ripgrep make \
     iptables ipset iproute2 dnsutils \
     openssh-server jq vim gh golang gpg python3.12-venv \
-    ca-certificates tmux mosh libclang-dev libssl-dev
+    ca-certificates tmux mosh libclang-dev libssl-dev lld
 
 # Install additional apt packages specified by the user
 ARG EXTRA_PACKAGES=""
@@ -77,6 +77,14 @@ USER $USERNAME
 WORKDIR $CODE_PATH
 
 RUN go install golang.org/x/tools/gopls@latest
+
+# Configure cargo to use lld linker on Linux. GNU ld processes static libraries
+# in a single pass and can fail on aarch64 when crate link order causes symbols
+# to be discarded before they're referenced (e.g. blst/c-kzg in the OP Stack).
+# Write to both ~/.cargo/ (default) and ~/.cache/cargo/ (CARGO_HOME at runtime).
+RUN mkdir -p ${USER_HOME}/.cargo ${USER_HOME}/.cache/cargo && \
+    printf '[target.aarch64-unknown-linux-gnu]\nrustflags = ["-C", "link-arg=-fuse-ld=lld"]\n\n[target.x86_64-unknown-linux-gnu]\nrustflags = ["-C", "link-arg=-fuse-ld=lld"]\n' \
+    | tee ${USER_HOME}/.cargo/config.toml > ${USER_HOME}/.cache/cargo/config.toml
 
 # Install mise and ensure state directory exists (prevents Docker creating it as root on mount)
 RUN curl https://mise.run | sh && \
