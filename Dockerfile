@@ -1,10 +1,11 @@
 FROM ubuntu:latest
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     git curl zsh fzf ripgrep make \
     iptables ipset iproute2 dnsutils \
     openssh-server jq vim gh golang gpg python3.12-venv \
-    ca-certificates tmux mosh libclang-dev libssl-dev lld
+    ca-certificates tmux mosh libclang-dev libssl-dev lld \
+    tzdata
 
 # Install additional apt packages specified by the user
 ARG EXTRA_PACKAGES=""

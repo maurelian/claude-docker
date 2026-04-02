@@ -22,6 +22,7 @@ services:
 
     environment:
       - APP_USER=${USER}
+      - TZ=${TZ:-UTC}
       - GOMODCACHE=${HOME}/.cache/go-mod
       - CARGO_HOME=${HOME}/.cache/cargo
       - SVM_HOME=${HOME}/.cache/svm

@@ -30,6 +30,18 @@ if [ -z "${SSH_AUTHORIZED_KEYS:-}" ]; then
 fi
 
 export SSH_AUTHORIZED_KEYS
+
+# Detect host timezone so the container matches
+if [ -z "${TZ:-}" ]; then
+    if [ -L /etc/localtime ]; then
+        # macOS: /var/db/timezone/zoneinfo/<tz>, Linux: /usr/share/zoneinfo/<tz>
+        TZ=$(readlink /etc/localtime | sed 's|.*/zoneinfo/||')
+    elif [ -f /etc/timezone ]; then
+        TZ=$(cat /etc/timezone)
+    fi
+fi
+export TZ="${TZ:-UTC}"
+
 build_compose_file_args
 
 docker compose "${COMPOSE_FILE_ARGS[@]}" up -d --build
