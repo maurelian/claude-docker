@@ -15,7 +15,7 @@ services:
     volumes:
       - ${CODE_PATH}:${CODE_PATH}
       - ${HOME}/.claude:${HOME}/.claude
-      - ${HOME}/.claude.json:${HOME}/.claude.json
+      - ./.mount-stage:${HOME}/.claude-mount-stage
       - ssh-host-keys:/etc/ssh
       - ${HOME}/.ssh/known_hosts:${HOME}/.ssh/known_hosts:ro
       - build-cache:${HOME}/.cache
