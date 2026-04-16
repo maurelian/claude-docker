@@ -9,6 +9,7 @@ services:
         USER_HOME: ${HOME}
         SSH_AUTHORIZED_KEYS: ${SSH_AUTHORIZED_KEYS}
         EXTRA_PACKAGES: ${EXTRA_PACKAGES:-}
+        EXTRA_NPM_PACKAGES: ${EXTRA_NPM_PACKAGES:-}
     ports:
       - "${SSH_PORT:-2222}:22"
       - "${MOSH_PORT:-60001}:60001/udp"
