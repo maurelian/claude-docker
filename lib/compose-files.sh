@@ -52,4 +52,19 @@ build_compose_file_args() {
     for f in "$SCRIPT_DIR"/compose.d/*.yml; do
         [ -f "$f" ] && COMPOSE_FILE_ARGS+=(-f "$f") || true
     done
+
+    if [ -n "${EXTRA_PORTS:-}" ]; then
+        local extra_ports_file="$SCRIPT_DIR/.mount-stage/extra-ports.yml"
+        mkdir -p "$SCRIPT_DIR/.mount-stage"
+        {
+            printf 'services:\n'
+            printf '  claude-dev:\n'
+            printf '    ports:\n'
+            local port
+            for port in $EXTRA_PORTS; do
+                printf '      - "%s"\n' "$port"
+            done
+        } > "$extra_ports_file"
+        COMPOSE_FILE_ARGS+=(-f "$extra_ports_file")
+    fi
 }
