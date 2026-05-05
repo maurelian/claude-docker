@@ -88,6 +88,8 @@ All configuration lives in `.env` (gitignored). Copy `.env.example` to get start
 | `CODEX_ARGS` | *(empty)* | Default arguments passed to codex (e.g. `--full-auto`) |
 | `CODEX_SANDBOX` | `danger-full-access` | Codex sandbox mode — bubblewrap can't create namespaces inside Docker, so sandboxed modes require `--privileged` |
 | `EXTRA_PACKAGES` | *(empty)* | Additional apt packages to install in the container (e.g. `postgresql-client redis-tools`) |
+| `EXTRA_NPM_PACKAGES` | *(empty)* | Additional global npm packages to install in the container (e.g. `opencode-ai`) |
+| `EXTRA_BUILD_CMD` | *(empty)* | Shell command to run at the end of the image build as the non-root user |
 
 ## Credential sync
 

@@ -107,3 +107,10 @@ RUN curl https://mise.run | sh && \
 # Install Claude Code (native install, auto-updates in background)
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
+# Run a user-provided shell command at build time (as the non-root user).
+# Set EXTRA_BUILD_CMD in .env to any command, e.g. `npx -y claude-mem install`.
+# PATH includes user-local tool bins installed above.
+ARG EXTRA_BUILD_CMD=""
+RUN if [ -n "$EXTRA_BUILD_CMD" ]; then \
+        PATH="${USER_HOME}/.local/bin:${PATH}" sh -c "$EXTRA_BUILD_CMD"; \
+    fi
