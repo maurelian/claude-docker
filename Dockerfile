@@ -28,7 +28,7 @@ ARG EXTRA_NPM_PACKAGES=""
 RUN if [ -n "$EXTRA_NPM_PACKAGES" ]; then npm install -g $EXTRA_NPM_PACKAGES; fi
 
 # SSH setup
-RUN mkdir /var/run/sshd && \
+RUN mkdir -p /var/run/sshd && \
     cp -r /etc/ssh /etc/ssh.original && \
     echo 'AcceptEnv ITERM_SESSION_ID FORWARD_*' >> /etc/ssh/sshd_config && \
     echo 'AcceptEnv ITERM_SESSION_ID FORWARD_*' >> /etc/ssh.original/sshd_config
