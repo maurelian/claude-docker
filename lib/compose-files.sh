@@ -67,4 +67,30 @@ build_compose_file_args() {
         } > "$extra_ports_file"
         COMPOSE_FILE_ARGS+=(-f "$extra_ports_file")
     fi
+
+    # EXTRA_MOUNTS: space-separated host paths to bind-mount read-only at the
+    # same path inside the container. Missing files are skipped silently so
+    # the list can include optional dotfiles. Symlinks are resolved via
+    # resolve_mount_path for Nix home-manager compatibility.
+    if [ -n "${EXTRA_MOUNTS:-}" ]; then
+        local extra_mounts_file="$SCRIPT_DIR/.mount-stage/extra-mounts.yml"
+        local mount_lines=""
+        local src resolved name
+        for src in $EXTRA_MOUNTS; do
+            [ -e "$src" ] || continue
+            name="extra-$(printf '%s' "$src" | shasum | cut -c1-12)-$(basename "$src")"
+            resolved="$(resolve_mount_path "$src" "$name")"
+            mount_lines+="      - \"${resolved}:${src}:ro\""$'\n'
+        done
+        if [ -n "$mount_lines" ]; then
+            mkdir -p "$SCRIPT_DIR/.mount-stage"
+            {
+                printf 'services:\n'
+                printf '  claude-dev:\n'
+                printf '    volumes:\n'
+                printf '%s' "$mount_lines"
+            } > "$extra_mounts_file"
+            COMPOSE_FILE_ARGS+=(-f "$extra_mounts_file")
+        fi
+    fi
 }
