@@ -56,7 +56,7 @@ run_remote() {
     local remote_cmd="${prep}$1"
     local exit_code=0
 
-    local ssh_cmd="ssh -p ${ssh_port} ${ssh_extra_opts[*]} ${send_env_opts[*]} ${iterm_opts[*]}"
+    local ssh_cmd="ssh -p ${ssh_port}${ssh_extra_opts[*]+ ${ssh_extra_opts[*]}}${send_env_opts[*]+ ${send_env_opts[*]}}${iterm_opts[*]+ ${iterm_opts[*]}}"
 
     if [[ "${USE_MOSH:-false}" == "true" ]] && command -v mosh &>/dev/null; then
         mosh --ssh="$ssh_cmd" -p "$mosh_port" localhost -- zsh -c "$remote_cmd" || exit_code=$?
